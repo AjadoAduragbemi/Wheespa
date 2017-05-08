@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "wheespa_server.hpp"
+#include "wheespa_client.hpp"
 
 int main(int argc, char* argv[]){
 	
@@ -9,9 +10,12 @@ int main(int argc, char* argv[]){
 		
 		if(opts.getOpts(argc, argv) != OPTGOOD) return -1;
 		
-		wheespa::wheespa_server::WheespaServer whServ(opts);
-		whServ.start();
-		
+		if(opts.listen){
+			wheespa::wheespa_server::WheespaServer w_serv(opts);
+			w_serv.start();
+		}else{
+			wheespa::wheespa_client::WheespaClient w_cli(opts);
+		}
 	}catch(const std::exception& ex){
 		std::cerr << ex.what() << std::endl;
 	}
