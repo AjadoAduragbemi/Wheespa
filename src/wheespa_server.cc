@@ -26,14 +26,12 @@ void wheespa_server::WheespaServer::prepareDatabase(){
 		arr.push_back("W_ID integer primary key not NULL");
 		arr.push_back("W_USER char(32) unique not NULL");
 		arr.push_back("W_PASS char(40) not NULL");
-		arr.push_back("W_LAST_LOGIN long");
 	#else
 		arr =
 		{
 			"W_ID integer primary key not NULL",
 			"W_USER char(32) unique not NULL",
-			"W_PASS char(40) not NULL",
-			"W_LAST_LOGIN long",
+			"W_PASS char(40) not NULL"
 		};
 	#endif
 
@@ -79,16 +77,16 @@ void wheespa_server::WheespaServer::start(){
 	auto foo = [this](){ m_si->close(wheespa_socket::FD::SOCK); };
 	
 	static WheespaServerTree w_connected;
+	static std::string db_filename = m_opts.dbasefile;
 	
 	m_vth.push_back(std::thread([](){
-		//static bool p = true;
 		while(true){
 			
 			w_connected.traverse([](Node<WheespaConnected>* node){
 				try{
 					std::string recvd = node->data.sock_stream->read(2048, 0);
 					if(recvd.length() > 0){
-						HandleReceived h_recvd(recvd, node);
+						HandleReceived h_recvd(recvd, node, db_filename);
 						h_recvd.handle(w_connected);
 					}
 				}catch(const std::exception& e){

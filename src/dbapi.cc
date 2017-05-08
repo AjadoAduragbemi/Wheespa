@@ -77,13 +77,13 @@ namespace dbapi{
 		#ifdef _WIN32
 			SQLITE_GET_TABLE sqlite3_get_table = (SQLITE_GET_TABLE) GetProcAddress(lib_handle, "sqlite3_get_table");
 		#endif
-
+		
 		ptable get = new table_st;
-
+		
 		std::string cmd = "select * from " + table;
-
+		
 		last_func_called = "db_init_table";
-    
+		
 		if(sqlite3_get_table( db_handle,
 							  cmd.c_str(),
 							  &get->table_buf,
@@ -98,7 +98,7 @@ namespace dbapi{
 			setLAT(table);
         
 			get->rows = new std::vector<std::string>[get->col_count];
-        
+			
 			for(int i = 0; i < get->col_count; i++){
 
 				get->columns.push_back(get->table_buf[i]);

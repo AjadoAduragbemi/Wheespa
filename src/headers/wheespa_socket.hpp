@@ -7,9 +7,9 @@
 #include "secure_socket.hpp"
 
 namespace wheespa{
-
-	namespace wheespa_socket = iosocket;
-	
+    
+    namespace wheespa_socket = iosocket;
+    
 }
 
 #endif

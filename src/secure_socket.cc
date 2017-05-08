@@ -13,21 +13,21 @@ namespace iosocket{
 	void SecureSocket::initializeCTXServer(){
 
 		switch(m_ssl_proto_version){
-		//
-		//case PROTOCOL_TLSv1:
-		//	m_ssl_ctx = SSL_CTX_new(TLSv1_method());
-		//	break;
-		//
-		//case PROTOCOL_TLSv1_1:
-		//	m_ssl_ctx = SSL_CTX_new(TLSv1_1_server_method());
-		//	break;
-		//
-		//case PROTOCOL_TLSv1_2:
-		//	m_ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
-		//	break;
-		//
-		//default:
-		//	/* Nothing yet.*/;
+		
+		case PROTOCOL_TLSv1:
+			m_ssl_ctx = SSL_CTX_new(TLSv1_method());
+			break;
+		
+		case PROTOCOL_TLSv1_1:
+			m_ssl_ctx = SSL_CTX_new(TLSv1_1_server_method());
+			break;
+		
+		case PROTOCOL_TLSv1_2:
+			m_ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
+			break;
+		
+		default:
+			/* Nothing yet.*/;
 		}
 	}
 
