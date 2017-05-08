@@ -35,12 +35,12 @@ namespace iosocket{
 	void SecureSocket::LoadCertificate(const std::string& file){
 		
 		if(SSL_CTX_use_certificate_file(m_ssl_ctx,
-									 file.c_str(),
-									 SSL_FILETYPE_PEM) <= 0) ERR_print_errors_fp(stderr);;
+										file.c_str(),
+										SSL_FILETYPE_PEM) <= 0) ERR_print_errors_fp(stderr);;
 		
 		if(SSL_CTX_use_PrivateKey_file(m_ssl_ctx,
-									file.c_str(),
-									SSL_FILETYPE_PEM) <= 0) ERR_print_errors_fp(stderr);;
+									   file.c_str(),
+									   SSL_FILETYPE_PEM) <= 0) ERR_print_errors_fp(stderr);;
 	}
 
 
@@ -57,9 +57,9 @@ namespace iosocket{
 						   &len);
 		
 		m_ssl = SSL_new(m_ssl_ctx);
-
+		
 		SSL_set_fd(m_ssl, conn_fd);
-
+		
 		if(::SSL_accept(m_ssl) <= 0){
 			ERR_print_errors_fp(stderr);
 			SSL_shutdown(m_ssl);
@@ -120,7 +120,7 @@ namespace iosocket{
 		if(msg.empty() || *msg.rbegin() != '\n'){
             msg.push_back('\n');
         }
-
+		
 		return SSL_write(m_ssl, msg.c_str(), msg.length());
 	}
 
