@@ -3,14 +3,15 @@
 #include <typeinfo>
 #include <csignal>
 #include <regex>
+#include <cassert>
 #include "wheespa_server.hpp"
+#include "handle_signal.hpp"
 #include "binary_tree.cc"
 
 using namespace wheespa;
 
 void wheespa_server::WheespaServer::prepareSocket(){
 	if(m_si->bind(m_opts.address, m_opts.port) == BIND_FAILED) wheespa_socket::BindException(strerror(errno));
-	m_si->setSockOpt(m_si->getFD(wheespa_socket::FD::SOCK), SOL_SOCKET, SO_REUSEADDR);
 	m_si->listen(m_opts.listen_queue_size);
 	if(m_opts.verbose) std::cout << "[+] listening on port " << m_si->getPort(m_si->getHostInfo()->ai_addr) << "...\n";
 	m_serv_fd = m_si->getFD(wheespa_socket::FD::SOCK);
@@ -26,6 +27,8 @@ void wheespa_server::WheespaServer::prepareDatabase(){
 		arr.push_back("W_ID integer primary key not NULL");
 		arr.push_back("W_USER char(32) unique not NULL");
 		arr.push_back("W_PASS char(40) not NULL");
+		arr.push_back("W_MAIL char(64) not NULL");
+		arr.push_back("W_KEY char(64) not NULL");
 	#else
 		arr =
 		{
@@ -74,13 +77,18 @@ void wheespa_server::WheespaServer::start(){
 
 	int max_conn_fd = m_serv_fd + 1;
 	std::mutex mx;
-	auto foo = [this](){ m_si->close(wheespa_socket::FD::SOCK); };
+	//auto foo = [this](){ m_si->close(wheespa_socket::FD::SOCK); };
+	
+	SignalHandler sig_handler;
+	sig_handler.sigaction(SIGTERM);
+	sig_handler.sigaction(SIGINT);
 	
 	static WheespaServerTree w_connected;
 	static std::string db_filename = m_opts.dbasefile;
 	
-	m_vth.push_back(std::thread([](){
-		while(true){
+	
+	std::thread th1([](){
+		while(SignalHandler::r_signal == 0){
 			
 			w_connected.traverse([](Node<WheespaConnected>* node){
 				try{
@@ -98,67 +106,59 @@ void wheespa_server::WheespaServer::start(){
 			/* Wait a byte :D */
 			std::this_thread::sleep_for(std::chrono::milliseconds(256));	//consider CPU
 		}
-	}));
+	});
 	
-	while(true){
+	try{
+		std::shared_ptr<char> thread_count;
+		std::regex rex(R"(^([[A-Z_]+])::((?:[a-z]+=[\w@\.!%<>,~`]+:::){2,4})$)");
+		std::shared_ptr<std::regex> shared_rex = std::make_shared<std::regex>(std::regex(R"(([a-z]+)=([\w@\.!%<>,~`]+):::)"));
+		
+		while(!SignalHandler::r_signal){
 			
-		if(select(max_conn_fd, &rfd, nullptr, nullptr, nullptr) == -1){
-			std::cerr << "[!] select failed." << std::endl;
-			break;
-		}else{
-				
-			if(FD_ISSET(m_serv_fd, &rfd)){
-
-				if(!m_si->accept()) {
-					std::cerr << "[!] An error occured while trying to accept a connection." << std::endl;
-					continue;
-				}
-				
-				m_vth.push_back(std::thread([&mx, this](wheespa_socket::PSocketInterface t_si){
+			if(select(max_conn_fd, &rfd, nullptr, nullptr, nullptr) != -1){
+					
+				if(FD_ISSET(m_serv_fd, &rfd)){
+	
+					if(m_si->accept() <= 0) {
+						continue;
+					}
 					
 					wheespa_socket::PSocketInterface sI;
-					
-					try{
-						
-						if(typeid(*t_si) == typeid(wheespa_socket::SecureSocket)){
-							sI = new wheespa_socket::SecureSocket;
-							std::memcpy(sI, t_si, sizeof(wheespa_socket::SecureSocket));
-						}else{
-							sI = new wheespa_socket::Socket;
-							std::memcpy(sI, t_si, sizeof(wheespa_socket::Socket));
-						}
-						
-						HandleRequest h_request(wheespa_socket::SocketStream(sI), m_opts.dbasefile);
-						h_request.handle();
-						
-						if(h_request.getConnected().sock_stream.get() != nullptr){
-							mx.lock();
-								if(w_connected.find(h_request.getConnected().key) == nullptr){
-									h_request.getConnected().sock_stream->write("WHEESPA_CONNECT_SUCCESS");
-									w_connected.insert(h_request.getConnected());
-									if(m_opts.verbose)
-										std::cout << "[+] " << h_request.getConnected().key << " is now connected." << std::endl;
-								}else{
-									h_request.getConnected().sock_stream->write("WHEESPA_CURRENTLY_LOGGED_IN");
-									h_request.getConnected().sock_stream->close();
-								}
-							mx.unlock();
-						}else{
-							sI->close(wheespa_socket::FD::CONN);
-						}
-						
-					}catch(const std::exception& ex){
-						mx.lock();
-							std::cerr << ex.what() << std::endl;
-						mx.unlock();
-						sI->close(wheespa_socket::FD::CONN);
-						//delete sI;
+					if(typeid(*m_si) == typeid(wheespa_socket::SecureSocket)){
+						sI = new wheespa_socket::SecureSocket;
+						std::memcpy(sI, m_si, sizeof(wheespa_socket::SecureSocket));
+					}else{
+						sI = new wheespa_socket::Socket;
+						std::memcpy(sI, m_si, sizeof(wheespa_socket::Socket));
 					}
-				}, m_si));
 					
+					m_vth.push_back(std::thread([&mx, shared_rex, rex,  this](wheespa_socket::PSocketInterface t_si){
+						try{
+							wheespa_socket::SocketStream ss(t_si);
+							ss.write(m_opts.dbasefile);
+							std::string request = ss.read(1024, 90);
+							std::smatch match_result;
+							mx.lock();
+							bool is_valid_request = std::regex_match(request, match_result, rex);
+							mx.unlock();
+							if(is_valid_request){
+								HandleRequest hr(ss, match_result, shared_rex, m_opts.dbasefile);
+							}
+						}catch(const std::exception& ex){
+							std::cerr << ex.what() << std::endl;
+						}
+						t_si->shutdown(0);
+					}, sI));
+					
+				}
 			}
 		}
+	}catch(const std::exception& ex){
+		std::cerr << ex.what() << std::endl;
 	}
-
+	th1.join();
+	m_si->shutdown(2);
+	m_si->close(wheespa_socket::FD::SOCK);
+	return;
 }
 

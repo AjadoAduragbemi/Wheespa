@@ -2,6 +2,7 @@
 #define WHEESPA_HANDLE_REQUEST_HPP
 
 #include <iostream>
+#include <regex>
 #include "wheespa_socket.hpp"
 #include "wheespa_base.hpp"
 #include "wheespa_tree.hpp"
@@ -27,6 +28,8 @@ namespace wheespa{
 			ClientRequest m_req;
 			wheespa_base::FlexDB w_db;
 			WheespaConnected m_conn;
+			
+			std::string request;
 
 			bool login(std::string&);
 			bool registerUser();
@@ -37,12 +40,19 @@ namespace wheespa{
 			bool authenticate(const std::string&, const std::string&);
 			
 			static int anonymous_count;
+			
+			template<typename... Args>
+			void unpack<>();
 
 		public:
 
 			HandleRequest(const wheespa_socket::SocketStream& ss,
+						  const std::smatch& mr,
+						  std::shared_ptr<std::regex> s_rex,
 						  const std::string& dbfn) : m_ss(ss),
-													 w_db(dbfn){}
+													 w_db(dbfn){
+				
+			}
 			void handle();
 			const WheespaConnected& getConnected();
 			

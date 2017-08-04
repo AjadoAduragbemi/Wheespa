@@ -9,24 +9,20 @@
 
 namespace iosocket{
 
-	enum ProtocolVersion{
-		PROTOCOL_TLSv1,
-		PROTOCOL_TLSv1_1,
-		PROTOCOL_TLSv1_2
+	enum ProtocolMethod{
+		PROTOCOL_SERVER_METHOD,
+		PROTOCOL_CLIENT_METHOD,
+		PROTOCOL_METHOD
 	};
 
 	class SecureSocket : public SocketInterface {
 		SSL_CTX* m_ssl_ctx;
 		SSL* m_ssl;
-		ProtocolVersion m_ssl_proto_version;
-		std::string m_certificate;
+		ProtocolMethod m_ssl_method;
+		std::string m_pemfile;
 
 		void initialize();
-		void initializeCTXServer();
-		void initializeCTXClient();
-		void LoadCertificate(const std::string&);
-		void SSL_accept();
-		void SSL_Shutdown();
+		int initializeSSL_CTX();
 
 	public:
 		SecureSocket() {}
@@ -35,8 +31,8 @@ namespace iosocket{
 					 const int sock_type,
 					 const int protocol,
 					 std::string& certificate,
-					 ProtocolVersion proto_version = PROTOCOL_TLSv1) : m_ssl_proto_version(proto_version),
-					 												   m_certificate(certificate){
+					 ProtocolMethod ssl_method = ProtocolMethod::PROTOCOL_METHOD) : m_ssl_method(ssl_method),
+																					m_pemfile(certificate){
 			setFamily(family);
 			setSockType(sock_type);
 			setProtocol(protocol);
@@ -60,8 +56,9 @@ namespace iosocket{
 
 		std::string recv(const uint16_t, size_t&) const;
         
-		const int send(std::string) const;
-
+		int send(std::string) const;
+		
+		int shutdown(int) const;
 	};
 
 }

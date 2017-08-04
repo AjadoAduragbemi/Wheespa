@@ -25,6 +25,7 @@ namespace wheespa{
                 GET_ADMINS,
                 ADD_ADMIN,
                 ACCEPT_REGISTRATION,    //accept a pending registration
+                OPEN_CHANNEL,
                 REMOVE_ADMIN,
                 REMOVE_REGISTERED
             }m_admin_cmd;
@@ -49,6 +50,7 @@ namespace wheespa{
                         else if(m_result[2] == "GET_ADMINS") m_admin_cmd = AdminCommand::GET_ADMINS;
                         else if(m_result[2] == "ADD_ADMIN") m_admin_cmd = AdminCommand::ADD_ADMIN;
                         else if(m_result[2] == "ACCEPT_REGISTRATION") m_admin_cmd = AdminCommand::ACCEPT_REGISTRATION;
+                        else if(m_result[2] == "OPEN_CHANNEL") m_admin_cmd = AdminCommand::OPEN_CHANNEL;
                         else if(m_result[2] == "REMOVE_ADMIN") m_admin_cmd = AdminCommand::REMOVE_ADMIN;
                         else if(m_result[2] == "REMOVE_REGISTERED") m_admin_cmd = AdminCommand::REMOVE_REGISTERED;
                         else m_user->data.sock_stream->write("WHEESPA_INVALID_COMMAND");

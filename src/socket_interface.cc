@@ -92,7 +92,7 @@ namespace iosocket{
         m_family = host_info->ai_family;
         
         if(socket() != SOCKET_OK) throw SocketException(strerror(errno));
-        
+        setSockOpt(sock_fd, SOL_SOCKET, SO_REUSEADDR);
         return bind(host_info);
     }
     
@@ -139,8 +139,8 @@ namespace iosocket{
     }
 
 
-	int SocketInterface::setSockOpt(const uint32_t fam, int level, int option, socklen_t val){
-		return ::setsockopt(fam,
+	int SocketInterface::setSockOpt(const uint32_t fd, int level, int option, socklen_t val){
+		return ::setsockopt(fd,
 							level,
 							option,
 							(const char*)&val,

@@ -6,9 +6,8 @@ namespace wheespa{
 	
 	void wheespa_server::HandleRequest::handle(){
 		
-		std::string wcr = m_ss.read(32);
-		
-		if(wcr.compare("WHEESPA_ADMIN_LOGIN") == 0) m_req = ClientRequest::AdminLogin;
+		//bool match_found = std::regex_match();
+		/*if(wcr.compare("WHEESPA_ADMIN_LOGIN") == 0) m_req = ClientRequest::AdminLogin;
 		else if(wcr.compare("WHEESPA_ANONYMOUS") == 0) m_req = ClientRequest::AnonymousConnect;
 		else if(wcr.compare("WHEESPA_CHANGE_PASSWORD") == 0) m_req = ClientRequest::ChangePassword;
 		else if(wcr.compare("WHEESPA_CHECK_PENDING") == 0) m_req = ClientRequest::CheckPending;
@@ -90,7 +89,8 @@ namespace wheespa{
 			
 			default:
 				m_ss.write("WHEESPA_INVALID_REQUEST");
-		}
+				m_ss.getSocketInterface()->shutdown(0);
+		}*/
 	}
 
 
@@ -118,7 +118,7 @@ namespace wheespa{
 
 	bool wheespa_server::HandleRequest::authenticate(const std::string& user, const std::string& pass){
 		
-		std::string query = "Select W_ID from Registered where "
+		std::string query = "Select * from Registered where "
 							"W_USER = \"" + user + "\" and W_PASS = \"" + pass + "\"";
 		
 		bool exists = false;

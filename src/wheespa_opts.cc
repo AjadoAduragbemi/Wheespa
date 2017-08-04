@@ -27,7 +27,17 @@ option::ArgStatus Numeric(const option::Option& option, bool msg){
 	return option::ARG_ILLEGAL;
 }
 
-enum optIndex{UNKNOWN,VERBOSE, PORT, CERTFILE, LOGFILE, BASEFILE, QUEUESIZE, LISTEN, HELP};
+enum optIndex{UNKNOWN,
+			  VERBOSE,
+			  PORT,
+			  CERTFILE,
+			  LOGFILE,
+			  BASEFILE,
+			  QUEUESIZE,
+			  LISTEN,
+			  AS_ADMIN,			//login as an administrator
+			  AS_ANONYMOUS,		//login as an anonymous user
+			  HELP};
 
 const option::Descriptor desc[] = {{UNKNOWN, 0, "", "", Unknown, 
 									"USAGE: wserv [options] ADDRESS\n\noptions: "},
@@ -89,6 +99,13 @@ int wheespa::WheespaOpts::getOpts(int argc, char* argv[]){
 				break;
 			case LISTEN:
 				listen = true;
+				break;
+			case AS_ADMIN:
+				as_admin = true;
+				break;
+			case AS_ANONYMOUS:
+				as_anonymous = true;
+				break;
 		}
 	}
 		

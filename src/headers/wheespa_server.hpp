@@ -25,7 +25,7 @@ namespace wheespa{
 			wheespa_socket::PSocketInterface m_si;
 			wheespa_base::FlexDB m_db;
 
-			WheespaOpts m_opts;
+			const WheespaOpts m_opts;
 
 
 			void prepareSocket();
@@ -33,10 +33,14 @@ namespace wheespa{
 			
 		public:
 
-			WheespaServer(const WheespaOpts& opts) : m_opts(opts),
+			WheespaServer(WheespaOpts& opts) : m_opts(opts),
 													 m_serv_fd(0),
 													 m_cli_fd(0),
-													 m_si(new wheespa_socket::Socket(AF_UNSPEC, SOCK_STREAM)),
+													 m_si(new wheespa_socket::SecureSocket(AF_UNSPEC,
+																						   SOCK_STREAM,
+																						   IPPROTO_TCP,
+																						   opts.certfile,
+																						   wheespa_socket::ProtocolMethod::PROTOCOL_SERVER_METHOD)),
 													 m_vth() {
 				prepareDatabase();
 				prepareSocket();
@@ -54,7 +58,7 @@ namespace wheespa{
 		};
 
 	}
-
+	
 }
 
 #endif

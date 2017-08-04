@@ -1,4 +1,5 @@
 
+#include <regex>
 #include "wheespa_client.hpp"
 
 enum{
@@ -15,7 +16,7 @@ namespace wheespa{
 
 			FD_ZERO(&m_rfds);
 			FD_ZERO(&m_wfds);
-
+			
 			m_si->connect(m_opts.address, m_opts.port);
 			m_sock_fd = m_si->getFD(wheespa_socket::FD::CONN);
 

@@ -13,7 +13,10 @@ namespace wheespa{
 
 	class WheespaOpts{
 		public:
-			bool verbose, listen;
+			bool verbose,
+				 listen,
+				 as_admin,
+				 as_anonymous;
 			std::string certfile;
 			std::string logfile;
 			int listen_queue_size;
@@ -25,7 +28,7 @@ namespace wheespa{
 				family = AF_INET;
 				listen_queue_size = 1024;
 				dbasefile = "wbase.db";
-				verbose = false;
+				certfile = "certficates/wdomain.inclprivkey.pem";
 			}
 			
 			int getOpts(int, char**);

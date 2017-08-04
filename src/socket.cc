@@ -4,7 +4,7 @@
 
 namespace iosocket{
         
-    const int Socket::send(std::string msg) const{
+    int Socket::send(std::string msg) const{
         if(msg.empty() || *msg.rbegin() != '\n'){
             msg.push_back('\n');
         }

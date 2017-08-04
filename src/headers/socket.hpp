@@ -17,7 +17,7 @@ namespace iosocket{
 			setProtocol(protocol);
         }
         
-        const int send(std::string) const;
+        int send(std::string) const;
         
         std::string recv(const uint16_t, size_t&) const;
         

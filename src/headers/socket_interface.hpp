@@ -67,7 +67,7 @@ namespace iosocket{
         
 		int listen(const uint16_t&);
         
-        virtual const int send(std::string) const = 0;
+        virtual int send(std::string) const = 0;
         
         virtual std::string recv(const uint16_t, size_t&) const = 0;
         
@@ -93,7 +93,7 @@ namespace iosocket{
 
 		int getFamily() const;
 		
-		int shutdown(int how) const;
+		virtual int shutdown(int how) const;
 		
 		const PAddrInfo getHostInfo() const;
 	};

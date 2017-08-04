@@ -16,6 +16,7 @@ int main(int argc, char* argv[]){
 		}else{
 			wheespa::wheespa_client::WheespaClient w_cli(opts);
 		}
+		
 	}catch(const std::exception& ex){
 		std::cerr << ex.what() << std::endl;
 	}
