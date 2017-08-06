@@ -20,7 +20,7 @@
 #define BINARY_TREE
 
 #include<iostream>
-#include<list>
+#include<vector>
 
 typedef struct TestDataStruct{
 	int key;
@@ -45,23 +45,24 @@ enum class TraverseOrder{
 template<typename Tp0, typename Tp1> class BinarySearchTree{
 	
 	Node<Tp0>* m_node;
-	Node<Tp0>* find(Node<Tp0>*, Tp1);
+	Node<Tp0>* find(Node<Tp0>*, const Tp1&);
 	void setDataArray(Node<Tp0>*);
-	std::list<Tp0> m_data_array;
+	std::vector<Tp0> m_data_array;
 
 protected:
-	void in_order(Node<Tp0>*, void(*)(Node<Tp0>*));
-	void pre_order(Node<Tp0>*, void(*)(Node<Tp0>*));
-	void post_order(Node<Tp0>*, void(*)(Node<Tp0>*));
+	void inOrder(Node<Tp0>*, void(*)(Node<Tp0>*));
+	void preOrder(Node<Tp0>*, void(*)(Node<Tp0>*));
+	void postOrder(Node<Tp0>*, void(*)(Node<Tp0>*));
 	
 public:
 	BinarySearchTree() : m_node(nullptr){}
+	~BinarySearchTree(){ delete m_node; }
 	
 	void insert(Tp0);
 	
 	bool isEmpty();
 	
-	const Node<Tp0>* find(Tp1);
+	const Node<Tp0>* find(const Tp1&);
 	
 	void traverse(void(*)(Node<Tp0>*), TraverseOrder=TraverseOrder::IN);
 	
@@ -69,7 +70,7 @@ public:
 	
 	void setDataArray();
 	
-	std::list<Tp0> getDataArray();
+	const std::vector<Tp0>& getDataArray();
 };
 
 #endif

@@ -124,7 +124,7 @@ namespace wheespa{
             
             WheespaServerTree in_tree = tree;
             in_tree.setDataArray();
-            std::list<WheespaConnected> onlineUsers = in_tree.getDataArray();
+            std::vector<WheespaConnected> onlineUsers = in_tree.getDataArray();
             std::ostringstream oss;
             oss << onlineUsers.size();
             

@@ -48,14 +48,14 @@ namespace dbapi{
 
 
 	std::string FlexDB::vec_to_str(const std::vector<std::string>& vec){
-		std::string str = "", append_to_str;
+		std::string ret_str = "", append_to_str;
 		std::vector<std::string>::const_iterator _iter;
     
 		for(_iter = vec.begin(); _iter != vec.end(); _iter++){
 
 			if(db_quote_params)
 
-				if(is_all_digit(*_iter)){
+				if(is_all_digit(*_iter) && !(*_iter).empty()){
 					append_to_str = *_iter;
 				}else{
 					append_to_str = "\"" + *_iter + "\"";
@@ -63,13 +63,13 @@ namespace dbapi{
 				
 			else append_to_str = *_iter;
         
-			str.append(append_to_str + ",");
+			ret_str.append(append_to_str + ",");
 		}
     
-		str.pop_back(); /* remove trailing comma */
+		ret_str.pop_back(); /* remove trailing comma */
 		db_quote_params = false;
 		
-		return str;
+		return ret_str;
 	}
 
 	

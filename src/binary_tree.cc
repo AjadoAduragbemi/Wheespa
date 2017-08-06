@@ -58,12 +58,12 @@ template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::insert(Tp0
 
 
 /* Search */
-template<typename Tp0, typename Tp1> const Node<Tp0>* BinarySearchTree<Tp0, Tp1>::find(Tp1 key){
+template<typename Tp0, typename Tp1> const Node<Tp0>* BinarySearchTree<Tp0, Tp1>::find(const Tp1& key){
 	return find(m_node, key);
 }
 
 
-template<typename Tp0, typename Tp1> Node<Tp0>* BinarySearchTree<Tp0, Tp1>::find(Node<Tp0>* node, Tp1 key){
+template<typename Tp0, typename Tp1> Node<Tp0>* BinarySearchTree<Tp0, Tp1>::find(Node<Tp0>* node, const Tp1& key){
 	if(node == nullptr) return nullptr;
 	if(node->data.key > key) return find(node->left, key);
 	else if(node->data.key < key) return find(node->right, key);
@@ -76,41 +76,41 @@ template<typename Tp0, typename Tp1>
 void BinarySearchTree<Tp0, Tp1>::traverse(void(*f)(Node<Tp0>*), TraverseOrder order){
 	switch(order){
 		case TraverseOrder::IN:
-			in_order(m_node, f);
+			inOrder(m_node, f);
 			break;
 		case TraverseOrder::PRE:
-			pre_order(m_node, f);
+			preOrder(m_node, f);
 			break;
 		case TraverseOrder::POST:
-			post_order(m_node, f);
+			postOrder(m_node, f);
 	}
 }
 
 
-template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::in_order(Node<Tp0>* node,
+template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::inOrder(Node<Tp0>* node,
+																			  void(*foo)(Node<Tp0>*)){
+	if(node != nullptr){
+		inOrder(node->left, foo);
+		if(!node->overwrite) foo(node);
+		inOrder(node->right, foo);
+	}
+}
+
+
+template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::preOrder(Node<Tp0>* node,
 																			   void(*foo)(Node<Tp0>*)){
 	if(node != nullptr){
-		in_order(node->left, foo);
 		if(!node->overwrite) foo(node);
-		in_order(node->right, foo);
+		preOrder(node->left, foo);
+		preOrder(node->right, foo);
 	}
 }
 
-
-template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::pre_order(Node<Tp0>* node,
+template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::postOrder(Node<Tp0>* node,
 																				void(*foo)(Node<Tp0>*)){
 	if(node != nullptr){
-		if(!node->overwrite) foo(node);
-		pre_order(node->left, foo);
-		pre_order(node->right, foo);
-	}
-}
-
-template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::post_order(Node<Tp0>* node,
-																				 void(*foo)(Node<Tp0>*)){
-	if(node != nullptr){
-		post_order(node->left, foo);
-		post_order(node->right, foo);
+		postOrder(node->left, foo);
+		postOrder(node->right, foo);
 		if(!node->overwrite) foo(node);
 	}
 }
@@ -118,14 +118,14 @@ template<typename Tp0, typename Tp1> void BinarySearchTree<Tp0, Tp1>::post_order
 /* Remove */
 template<typename Tp0, typename Tp1> const Node<Tp0>* BinarySearchTree<Tp0, Tp1>::remove(Tp1 in){
 	Node<Tp0>* ret;
-	ret = search(m_node, in);
-	ret->overwrite = true;
+	ret = find(m_node, in);
+	if(ret != nullptr) ret->overwrite = true;
 	return ret;
 }
 
 
 /* To Array */
-template<typename Tp0, typename Tp1> std::list<Tp0> BinarySearchTree<Tp0, Tp1>::getDataArray(){
+template<typename Tp0, typename Tp1> const std::vector<Tp0>& BinarySearchTree<Tp0, Tp1>::getDataArray(){
 	return m_data_array;
 }
 
@@ -160,7 +160,7 @@ int main(){
 	bst.remove(31);
 	bst.remove(27);
 	
-	const Node<DataX>* ptr = bst.search(19);
+	const Node<DataX>* ptr = bst.find(19);
 	if(ptr == nullptr) std::cout << "Not Found!\n";
 	else std::cout << "Found(" << ptr->data.key << ")\n";
 	

@@ -1,211 +1,143 @@
-
-#include "handle_request.hpp"
-
-namespace wheespa{
-	int wheespa_server::HandleRequest::anonymous_count = 0;
-	
-	void wheespa_server::HandleRequest::handle(){
-		
-		//bool match_found = std::regex_match();
-		/*if(wcr.compare("WHEESPA_ADMIN_LOGIN") == 0) m_req = ClientRequest::AdminLogin;
-		else if(wcr.compare("WHEESPA_ANONYMOUS") == 0) m_req = ClientRequest::AnonymousConnect;
-		else if(wcr.compare("WHEESPA_CHANGE_PASSWORD") == 0) m_req = ClientRequest::ChangePassword;
-		else if(wcr.compare("WHEESPA_CHECK_PENDING") == 0) m_req = ClientRequest::CheckPending;
-		else if(wcr.compare("WHEESPA_REGISTER") == 0) m_req = ClientRequest::Register;
-		else if(wcr.compare("WHEESPA_LOGIN") == 0) m_req = ClientRequest::Login;
-		else m_req = ClientRequest::InvalidRequest;
-		
-		switch(m_req){
-			case ClientRequest::AdminLogin:{
-				int retries = 0;
-				bool logged_in = false;
-
-				while(retries < 3 && logged_in == false){
-					std::string  username;
-					if((logged_in = adminLogin(username))){
-						m_conn.key = username;
-						m_conn.registered = true;
-						m_conn.is_admin = true;
-						m_conn.sock_stream = std::make_shared<wheespa_socket::SocketStream>(m_ss.getSocketInterface());
-					}else{
-						m_ss.write("WHESSPA_INVALID_LOGIN");
-					}
-					++retries;
-				}
-				break;
-			}
-			case ClientRequest::AnonymousConnect:{
-				std::string  user, pair;
-				anonymousConnect(user, pair);
-				m_conn.key = user;
-				m_conn.sock_stream = std::make_shared<wheespa_socket::SocketStream>(m_ss.getSocketInterface());
-				m_conn.connect_to = pair;
-				break;
-			}
-			case ClientRequest::ChangePassword:{
-				int retries = 0;
-				bool logged_in = false;
-
-				while(retries < 3 && logged_in == false){
-					std::string  username;
-					if((logged_in = login(username))){
-						std::string newpasswd = m_ss.read(128);
-						
-					}else{
-						m_ss.write("WHESSPA_INVALID_LOGIN");
-					}
-					++retries;
-				}
-				
-				break;
-			}
-			case ClientRequest::CheckPending:
-				break;
-			
-			case ClientRequest::Login:{
-				int retries = 0;
-				bool logged_in = false;
-
-				while(retries < 3 && logged_in == false){
-					std::string  username;
-					if((logged_in = login(username))){
-						m_conn.key = username;
-						m_conn.registered = logged_in;
-						m_conn.sock_stream = std::make_shared<wheespa_socket::SocketStream>(m_ss.getSocketInterface());
-					}else{
-						m_ss.write("WHESSPA_INVALID_LOGIN");
-					}
-					++retries;
-				}
-				
-				break;
-			}
-			
-			case ClientRequest::Register:
-				if(registerUser()){
-					m_ss.write("WHESSPA_REGISTER_SUCCESS");
-				}
-				break;
-			
-			default:
-				m_ss.write("WHEESPA_INVALID_REQUEST");
-				m_ss.getSocketInterface()->shutdown(0);
-		}*/
-	}
-
-
-	bool wheespa_server::HandleRequest::login(std::string &user){
-		
-		bool user_exists = false;
-		std::string username = m_ss.read(128);
-		std::string password = m_ss.read(128);
-
-		size_t pos = username.find_first_of(" ,~`!@#$%^&*()_+=-|\\/><{}[]'\":;?");
-
-		if(pos != -1){
-			m_ss.write("WHEESPA_CONTAINS_BAD_CHAR");
-		}else if(password.length() < 6){
-			m_ss.write("WHEESPA_PASSWORD_LENGTH_BAD");
-		}else{
-			SHA<SHA_DIGEST_LENGTH> sha(password);
-			user_exists = authenticate(username, sha.getOutput());
-			user = username;
+#include "handle_request.hpp"
+namespace wheespa{
+	int wheespa_server::ParseRequest::anonymous_count = 0;
+		bool wheespa_server::ParseRequest::handle(){
+		if(rt_map.find(m_req_type) == rt_map.end()){
+			m_ss.write("::WHEESPA_INVALID_REQUEST_TYPE");
+			return false;
 		}
 		
-		return user_exists;
-	}
-
-
-	bool wheespa_server::HandleRequest::authenticate(const std::string& user, const std::string& pass){
-		
-		std::string query = "Select * from Registered where "
-							"W_USER = \"" + user + "\" and W_PASS = \"" + pass + "\"";
-		
-		bool exists = false;
-		w_db.execQuery(query, [](void* arg, int col_cnt, char** rows, char** cols){
-			bool *p = static_cast<bool*>(arg);
-			*p = true;
-			return 0;
-		}, &exists);
-		
-		return exists;
-	}
-
-
-	bool wheespa_server::HandleRequest::registerUser(){ 
-		std::string username = m_ss.read(128);
-		std::string password0 = m_ss.read(128);
-		std::string password1 = m_ss.read(128);
-		
-		size_t pos = username.find_first_of(" ,~`!@#$%^&*()_+=-|\\/><{}[]'\":;?");
-		
-		if(pos != -1){
-			m_ss.write("WHEESPA_CONTAINS_BAD_CHAR");
-		}else if(password0.length() < 6){
-			m_ss.write("WHEESPA_PASSWORD_LENGTH_BAD");
-		}else if(username.compare("") == 0){
-			m_ss.write("WHEESPA_EMPTY_USERNAME");
-		}else if(password0.compare(password1) != 0){
-			m_ss.write("WHEESPA_PASSWORD_DONT_MATCH");
-		}else if(checkExists(username)){
-			m_ss.write("WHEESPA_USERNAME_EXISTS");
-		}else{
-			std::vector<std::string> vca;
-			vca.push_back(username);
-
-			SHA<SHA_DIGEST_LENGTH> sha(password0);
-			vca.push_back(sha.getOutput());
-
-			return w_db.insert("PendingRegistrations", "W_USER, W_PASS", vca);
+		bool ret;
+		switch(getValue(rt_map, m_req_type)){
+			case RequestType::AdminLogin:
+				ret = adminLogin();
+				break;
+			case RequestType::AnonymousConnect:
+				ret = anonymousConnect();
+				break;
+			case RequestType::DisconnectLogin:
+				ret = disconnectLogin();
+				break;
+			case RequestType::Login:
+				ret = login();
+				break;
+			case RequestType::Register:
+				ret = registerUser();
+				break;
 		}
-
-		return false;
+		
+		if(ret && getValue(rt_map, m_req_type) != RequestType::Register){
+			m_conn.sock_stream = std::make_shared<wheespa_socket::SocketStream>(m_ss.getSocketInterface());
+		}
+		
+		return ret;
 	}
-	
-
-	bool wheespa_server::HandleRequest::checkExists(const std::string& user){
-		bool exists = false;
-
-		std::string query = "Select R.W_USER, P.W_USER from Registered R, PendingRegistrations P "
-							"where R.W_USER = \"" + user + "\" OR P.W_USER = \"" + user + "\"";
-
-		w_db.execQuery(query, 
-					   [](void* arg, int col_cnt, char** rows, char** cols){
-						  	bool *p = static_cast<bool*>(arg);
-							*p = true;
-							return 0;
-						}, 
-						&exists);
-
-		return exists;
-	}
-	
-	bool wheespa_server::HandleRequest::anonymousConnect(std::string& user,std::string& pair){
-		std::ostringstream oss;
-		oss << "anonymous" << std::setw(3) << std::setfill('0') << ++anonymous_count;
-		user = oss.str();
-		pair = m_ss.read(128);
-		return true;
-	}
-	
-	
-	bool wheespa_server::HandleRequest::adminLogin(std::string& username){
-		bool auth = login(username);
+	
+	bool wheespa_server::ParseRequest::adminLogin(){
+		bool auth = login();
 		if(auth){
 			auth = false;
-			std::string query = "Select * from Administrators where W_USER = '" + username + "'";
+			std::string query = "Select * from Administrators where W_USER = '" + getValue(m_param, "username") + "'";
 			w_db.execQuery(query, 
 					   [](void* arg, int col_cnt, char** rows, char** cols){
-						  	bool *p = static_cast<bool*>(arg);
+							bool *p = static_cast<bool*>(arg);
 							*p = true;
 							return 0;
 						}, 
 						&auth);
+			m_conn.is_admin = auth;
 		}
 		return auth;
 	}
 	
+	bool wheespa_server::ParseRequest::anonymousConnect(){
+		if((m_param.find("alias") == m_param.end()) || (m_param.find("connectto") == m_param.end())){
+			m_ss.write("::WHEESPA_INVALID_REQUEST_TYPE_PARAMETERS");
+			return false;
+		}
+		
+		std::ostringstream oss;
+		oss << getValue(m_param, "alias") << std::setw(4) << std::setfill('0') << ++anonymous_count;
+		
+		m_conn.connect_to = getValue(m_param, "connectto");
+		m_conn.key = getValue(m_param, "alias");
+		
+		return true;
+	}
 	
-	const WheespaConnected& wheespa_server::HandleRequest::getConnected(){	return m_conn; }
-}
-
+	
+	bool wheespa_server::ParseRequest::disconnectLogin(){
+		return (disconnect_requested = login());
+	}
+	
+	
+	bool wheespa_server::ParseRequest::login(){
+		if((m_param.find("username") == m_param.end()) || (m_param.find("password") == m_param.end())){
+			m_ss.write("::WHEESPA_INVALID_REQUEST_TYPE_PARAMETERS");
+			return false;
+		}
+		
+		bool user_exists = false;
+		if(getValue(m_param, "password").length() < 6){			m_ss.write("::WHEESPA_INVALID_PASSWORD");		}else{			SHA<SHA_DIGEST_LENGTH> sha(getValue(m_param, "password"));			user_exists = authenticate(getValue(m_param, "username"), sha.getOutput());
+			m_conn.registered = user_exists;
+			m_conn.key = getValue(m_param, "username");		}
+		
+		return user_exists;	}
+	
+	bool wheespa_server::ParseRequest::registerUser(){ 
+		if((m_param.find("username") == m_param.end()) ||
+		   (m_param.find("password") == m_param.end()) ||
+		   (m_param.find("email") == m_param.end()))
+		{
+			m_ss.write("::WHEESPA_INVALID_REQUEST_TYPE_PARAMETERS");
+			return false;
+		}
+		
+		bool registered;
+		std::smatch tmp_mr;
+		
+		if(getValue(m_param, "username").length() > 32){
+			m_ss.write("::WHEESPA_INVALID_USERNAME");
+		}else if(getValue(m_param, "password").length() < 6){
+			m_ss.write("::WHEESPA_INVALID_PASSWORD");
+		}else if(!std::regex_match(m_param.find("email")->second, tmp_mr, std::regex(R"([\w]+@[\w\.]+(\.[a-z]+)?)"))){
+			m_ss.write("::WHEESPA_INVALID_EMAIL");
+		}else if(checkExists(getValue(m_param, "username"))){
+			m_ss.write("::WHEESPA_USER_ALREADY_EXIST");
+		}else{
+			//https://stackoverflow.com/questions/35102371/how-to-get-random-salt-from-openssl-as-stdstring			
+			if( w_db.insert("PendingRegistrations",
+							"W_USER, W_PASS, W_MAIL, W_KEY",
+							{	getValue(m_param, "username"),
+								SHA<SHA_DIGEST_LENGTH>(getValue(m_param, "password")).getOutput(),
+								getValue(m_param, "email"),
+								""
+							})){
+				registered = true;
+			}else /*w_db.printErrMsg()*/;
+		}
+		
+		return registered;
+	}
+	
+	
+	bool wheespa_server::ParseRequest::authenticate(const std::string& user, const std::string& pass){		std::string query = "Select * from Registered where "							"W_USER = \"" + user + "\" and W_PASS = \"" + pass + "\"";
+		
+		bool exists = false;
+		w_db.execQuery(query, [](void* arg, int col_cnt, char** rows, char** cols){			bool *p = static_cast<bool*>(arg);			*p = true;			return 0;		}, &exists);
+		
+		return exists;	}
+	
+	
+	bool wheespa_server::ParseRequest::checkExists(const std::string& user){		bool exists = false;		
+		std::string query = "Select R.W_USER, P.W_USER from Registered R, PendingRegistrations P "							"where R.W_USER = \"" + user + "\" OR P.W_USER = \"" + user + "\"";
+		
+		w_db.execQuery(query, 					   [](void* arg, int col_cnt, char** rows, char** cols){						  	bool *p = static_cast<bool*>(arg);							*p = true;							return 0;						}, 						&exists);
+		
+		return exists;	}
+	
+	
+	const WheespaConnected& wheespa_server::ParseRequest::getConnected(){	return m_conn; }
+	
+	bool wheespa_server::ParseRequest::requestedDisconnect(){ return disconnect_requested; }
+}
