@@ -113,9 +113,25 @@ void wheespa_server::WheespaServer::start(){
 		std::shared_ptr<char> thread_count;
 		std::regex rex(R"(^(?:\[([A-Z_]+)\])::((?:[a-z]+=[\w@\.!%<>,~`]+:::){2,4})$)");
 		std::shared_ptr<std::regex> shared_rex = std::make_shared<std::regex>(std::regex(R"(([a-z]+)=([\w@\.!%<>,~`]+):::)"));
+		std::atomic<bool>* ab;
 		
 		while(!SignalHandler::r_signal){
+			//This part is supposed to Manage memory
+			std::vector<unsigned> to_erase;
+			for(unsigned i = 0; i < m_futures.size(); i++){
+				if(*m_futures[i] == true && m_threads[i].joinable()){
+					m_threads[i].join();
+					to_erase.push_back(i);
+				}
+			}
 			
+			int counter = 0;
+			for(unsigned j : to_erase){
+				m_futures.erase(m_futures.begin()+(j-counter));
+				m_threads.erase(m_threads.begin()+(j-counter));
+				counter++;
+			}
+			//Accept and handle a connection
 			if(select(max_conn_fd, &rfd, nullptr, nullptr, nullptr) != -1){
 					
 				if(FD_ISSET(m_serv_fd, &rfd)){
@@ -133,7 +149,11 @@ void wheespa_server::WheespaServer::start(){
 						std::memcpy(sI, m_si, sizeof(wheespa_socket::Socket));
 					}
 					
-					m_vth.push_back(std::thread([&mx, shared_rex, rex,  this](wheespa_socket::PSocketInterface t_si){
+					ab = new std::atomic<bool>;
+					*ab = false;
+					m_futures.push_back(ab);
+					
+					m_threads.push_back(std::thread([&mx, &ab, shared_rex, rex,  this](const wheespa_socket::PSocketInterface t_si){
 						try{
 							int retries = 0;
 							bool handled_properly = false;
@@ -152,6 +172,7 @@ void wheespa_server::WheespaServer::start(){
 											w_connected.insert(preq.getConnected());
 											mx.unlock();
 											ss.write("::WHEESPA_CONNECTION_SUCCESS");
+											*ab = true;
 											return;
 										}else{
 											ss.write("::WHEESPA_CONNECTION_EXISTS");
@@ -169,8 +190,9 @@ void wheespa_server::WheespaServer::start(){
 						}catch(const std::exception& ex){
 							std::cerr << ex.what() << std::endl;
 						}
-						t_si->shutdown(0);
-						ss.close();
+						//if(t_si->shutdown(0) == 0) t_si->shutdown(0);
+						if(t_si->shutdown(0) == 1) t_si->close(wheespa_socket::FD::CONN);
+						*ab = true;
 					}, sI));
 					
 				}

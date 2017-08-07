@@ -134,6 +134,7 @@ namespace iosocket{
 	
 	
 	int SecureSocket::shutdown(int how) const{
-		if(m_ssl) SSL_shutdown(m_ssl);
+		if(m_ssl) return SSL_shutdown(m_ssl);
+		return -1;
 	}
 }

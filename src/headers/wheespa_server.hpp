@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <thread>
-
+#include <atomic>
 #include "wheespa_base.hpp"
 #include "wheespa_socket.hpp"
 #include "wheespa_tree.hpp"
@@ -21,12 +21,13 @@ namespace wheespa{
 			int m_serv_fd,
 				m_cli_fd;
 			
-			std::vector<std::thread> m_vth;
+			std::vector<std::thread> m_threads;
+			std::vector<std::atomic<bool>*> m_futures;
+			
 			wheespa_socket::PSocketInterface m_si;
 
 			const WheespaOpts m_opts;
-
-
+			
 			void prepareSocket();
 			void prepareDatabase();
 			
@@ -40,7 +41,7 @@ namespace wheespa{
 																					 IPPROTO_TCP,
 																					 opts.certfile,
 																					 wheespa_socket::ProtocolMethod::PROTOCOL_SERVER_METHOD)),
-											   m_vth() {
+											   m_threads(), m_futures() {
 				prepareDatabase();
 				prepareSocket();
 			}
@@ -49,7 +50,7 @@ namespace wheespa{
 				m_si->cleanUpOnEnd(true);
 				delete m_si;
 
-				for(auto& th : m_vth) th.join();
+				for(auto& th : m_threads) th.join();
 			}
 
 			void start();

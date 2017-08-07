@@ -21,7 +21,7 @@ namespace iosocket{
 		return msg;
 	}
 	
-	//Not valid for SecureSockets
+	//Deprecated
 	void SocketStream::flush() const{
 
 		fd_set rfds;
